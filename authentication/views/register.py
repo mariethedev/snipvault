@@ -19,7 +19,7 @@ class UserRegisterAPIView(APIView):
 
             # Send email
             subject = 'Welcome to SnipVault!'
-            message = 'Thank you for signing up. We are excited to have you on board!'
+            message = f'Greetings, {user.firstname} ! \n \nThank you for signing up. We are excited to have you on board!'
             email_from = settings.EMAIL_HOST_USER
             recipient_list = [user.email]
             send_mail(subject, message, email_from, recipient_list, fail_silently=False)
