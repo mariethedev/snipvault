@@ -3,6 +3,8 @@ from authentication.views.login import UserLoginAPIView
 from authentication.views.register import UserRegisterAPIView
 from authentication.views.google import *
 from authentication.views.github import *
+from authentication.views.userprofile import *
+from authentication.views.password import *
 
 urlpatterns = [
     ##Email Authentication
@@ -19,5 +21,12 @@ urlpatterns = [
     path('login/github', GithubAuthView.as_view(), name = 'github-login'),
     path('complete/github/', GithubRedirectView.as_view(), name = 'github-redirect'),
     
+    #UserProfile
+    path ('profile/', UserProfileView.as_view(), name = 'user-profile'),
+    path ('profile/change_password', ChangePasswordAPIView.as_view(), name = 'change-password'),
+    
+    #Password 
+    path('password_reset', ResetPasswordAPIView.as_view(), name = 'reset-password'),
+    path('password_reset/<uidb64>/<token>/', PasswordResetConfirmAPIView.as_view(), name='password-reset-confirm'),
 
 ]

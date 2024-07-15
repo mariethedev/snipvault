@@ -3,9 +3,10 @@ from authentication.serializers import UserLoginSerializer
 from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.response import Response
-from authentication.models import User
+from authentication.models import User,UserProfile
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.models import update_last_login
+from authentication.exceptions import *
 
 
 
@@ -18,15 +19,15 @@ class UserLoginAPIView(APIView):
 
         
         if not email or not password:
-            return Response({'message': 'Both email and password are required'}, status=status.HTTP_400_BAD_REQUEST)
-
+            raise RequiredFieldsError()
+        
         user = User.objects.filter(email=email.strip()).first()
 
         if not user:
-            return Response({'message': "No user with such email exists"}, status=status.HTTP_401_UNAUTHORIZED)
-
+            raise UserDoesNotExistError()
+        
         elif not user.check_password(password):
-            return Response({'message': 'Invalid credentials, try again'}, status=status.HTTP_401_UNAUTHORIZED)
+            raise IncorrectPasswordError()
         
         user = authenticate(request, email= email, password= password)
         
@@ -35,7 +36,8 @@ class UserLoginAPIView(APIView):
             update_last_login(None, user)
             
         else:
-            return Response({'message': 'Invalid credentials, try again'}, status=status.HTTP_401_UNAUTHORIZED)
+            raise IncorrectPasswordError()
+        
             
 
         serializer = self.serializer_class(user)
