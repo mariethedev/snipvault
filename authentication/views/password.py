@@ -1,5 +1,4 @@
 from rest_framework.views import APIView
-
 from authentication.serializers import *
 from rest_framework.response import Response
 from rest_framework import status
@@ -22,6 +21,7 @@ class ChangePasswordAPIView(APIView):
         serializer = self.serializer_class(data=request.data, context={'request': request})
 
         if serializer.is_valid():
+            
             user.set_password(serializer.validated_data['new_password'])
             user.save()
 
@@ -62,24 +62,24 @@ class ResetPasswordAPIView(APIView):
     
     
 class PasswordResetConfirmAPIView(APIView):
-    permission_classes = [AllowAny]
-    serializer_class = PasswordResetConfirmSerializer
+    serializer_class = PasswordResetConfirmSerializer 
     
     def post(self, request,uidb64= None,token = None):
         
         try:
             uid =force_str(urlsafe_base64_decode(uidb64))
             user = User.objects.get(pk=uid)
+
             
         except (TypeError, ValueError, OverflowError, User.DoesNotExist):
             return Response({'error': 'Invalid token or user ID'}, status=status.HTTP_400_BAD_REQUEST)
 
         if user is not None and default_token_generator.check_token(user, token):
-            serializer = self.serializer_class(data=request.data)
+            serializer = self.serializer_class(data=request.data, context={'user': user})
             
             if serializer.is_valid():
-                
-                serializer.save(user)
+                serializer.save()
+
                 return Response({'success': 'Password reset successfully!'}, status=status.HTTP_200_OK)
             
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

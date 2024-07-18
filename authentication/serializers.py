@@ -3,22 +3,43 @@ from .models import User, UserProfile
 from django.contrib.auth.password_validation import validate_password
 from rest_framework.exceptions import ValidationError
 from authentication.exceptions import *
-from django.contrib.auth.tokens import default_token_generator
-from django.utils.http import urlsafe_base64_decode
-from django.utils.encoding import force_str
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
     
-    password = serializers.CharField(max_length = 128, min_length = 6, write_only = True, style={'input_type': 'password'})      
+    password = serializers.CharField(max_length = 128, min_length = 6, write_only = True, style={'input_type': 'password'})   
+    confirm_password =  serializers.CharField(max_length = 128, min_length = 6, write_only = True, style={'input_type': 'password'})
     
     class Meta:
         model = User
-        fields = ['firstname', 'lastname', 'email', 'password',]
+        fields = ['firstname', 'lastname', 'email', 'password','confirm_password',]
         
         
-    def create(self,validated_data):
-        return User.objects.create_user(**validated_data)
+    def validate(self, data):
+        password = data.get('password')
+        confirm_password = data.get('confirm_password')
+        
+        if password != confirm_password:
+            raise PasswordMismatchError()
+        
+        user = User(email=data['email'])
+        try:
+            validate_password(password=password, user=user)
+        except ValidationError as e:
+            raise serializers.ValidationError({"password": list(e.messages)})
+        
+        return data
+
+    def create(self, validated_data):
+        validated_data.pop('confirm_password')
+        user = User(
+            email=validated_data['email'],
+            firstname=validated_data['firstname'],
+            lastname=validated_data['lastname']
+        )
+        user.set_password(validated_data['password'])
+        user.save()
+        return user
     
     
 class UserLoginSerializer(serializers.ModelSerializer):
@@ -41,7 +62,7 @@ class ChangePasswordSerializer(serializers.ModelSerializer):
     new_password = serializers.CharField(required = True, min_length = 8, write_only = True,style={'input_type': 'password'})
     confirm_password = serializers.CharField(required = True, min_length = 8, write_only = True,style={'input_type': 'password'})
     
-    def validate_password(self,data): 
+    def validate(self,data): 
         user = self.context['request'].user 
         current_password = data.get('current_password')
         new_password = data.get('new_password')
@@ -60,12 +81,18 @@ class ChangePasswordSerializer(serializers.ModelSerializer):
             raise PasswordMismatchError()
      
         try:
-            validate_password(new_password, user=user)
+            validate_password(password=new_password, user=user)
             
         except ValidationError as e:
-            raise serializers.ValidationError(str(e))
+            print(e)
+            raise serializers.ValidationError({'password': list(e.detail)})
         
         return data
+    
+    def save(self, user):
+        user = self.context['request'].user 
+        user.set_password(self.validated_data['new_password'])
+        user.save()
     
     
     class Meta:
@@ -83,25 +110,36 @@ class ResetPasswordSerializer(serializers.ModelSerializer):
         
         
 class PasswordResetConfirmSerializer(serializers.ModelSerializer):
+    
     new_password = serializers.CharField(required = True, min_length = 8, write_only = True,style={'input_type': 'password'})
     confirm_password = serializers.CharField(required = True, min_length = 8, write_only = True,style={'input_type': 'password'})
 
     def validate(self, data):
-        if data['new_password'] != data['confirm_password']:
+        new_password = data.get('new_password')
+        confirm_password = data.get('confirm_password')
+        
+        if new_password != confirm_password:
             raise PasswordMismatchError()
+        
+        user = self.context.get('user')
+        if not user:
+            raise serializers.ValidationError({"user": "User context is not provided."})
 
         try:
-            validate_password(data['new_password'])
+            validate_password(password= new_password, user=user)
             
         except ValidationError as e:
-            raise serializers.ValidationError(str(e))
-        
+            
+            raise serializers.ValidationError({'password': list(e.messages)})
         return data
-
-    def save(self, user):
+    
+    
+    def save(self):
+        user = self.context.get('user')
         user.set_password(self.validated_data['new_password'])
         user.save()
 
     class Meta:
         model = User
         fields = ('new_password', 'confirm_password')
+        

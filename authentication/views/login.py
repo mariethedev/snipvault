@@ -3,11 +3,10 @@ from authentication.serializers import UserLoginSerializer
 from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.response import Response
-from authentication.models import User,UserProfile
+from authentication.models import User
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.models import update_last_login
 from authentication.exceptions import *
-
 
 
 class UserLoginAPIView(APIView):
@@ -37,8 +36,7 @@ class UserLoginAPIView(APIView):
             
         else:
             raise IncorrectPasswordError()
-        
-            
+                 
 
         serializer = self.serializer_class(user)
         response_data = serializer.data
