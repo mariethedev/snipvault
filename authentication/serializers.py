@@ -51,9 +51,18 @@ class UserLoginSerializer(serializers.ModelSerializer):
         
         
 class UserProfileSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(source= 'user.email', read_only = True)
+    
     class Meta:
         model = UserProfile
-        fields = [ 'bio', 'location', 'birth_date', 'profile_image', ]
+        fields = [ 'email', 'bio', 'location', 'birth_date', 'profile_image', ]
+        
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        return {
+            'email': representation.pop('email'),
+            'profile': representation
+        }
         
         
 class ChangePasswordSerializer(serializers.ModelSerializer):
