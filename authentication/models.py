@@ -5,12 +5,8 @@ from django.contrib.auth.models import PermissionsMixin, UserManager, AbstractBa
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django.contrib.auth.hashers import make_password
-from django.apps import apps
-import jwt
-from django.conf import settings
-from datetime import datetime,timedelta
 from django.core.exceptions import ValidationError
-
+from django.contrib.auth import get_user_model
 
 class MyUserManager(UserManager):         
 
@@ -54,7 +50,6 @@ class MyUserManager(UserManager):
 
 class User(AbstractBaseUser, PermissionsMixin): 
     
-    
     AUTH_PROVIDERS =(
          ('email', 'Email'),
          ('google', 'Google'),
@@ -69,12 +64,27 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_staff = models.BooleanField(_("staff status"), default=False,)
     is_active = models.BooleanField(_("active"), default=True, )
     
-
     objects = MyUserManager() 
 
     USERNAME_FIELD = 'email'
     EMAIL_FIELD = "email" 
     REQUIRED_FIELDS = []
+    
+User = get_user_model()
+
+class UserProfile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='userprofile')
+    bio = models.TextField(blank=True, null= True)
+    location = models.CharField(max_length=100, blank=True, null= True)
+    birth_date = models.DateField(blank= True, null = True)
+    profile_image = models.ImageField(upload_to="profile_images/", blank = True , null = True)
+    
+    
+    
+    
+    def __str__(self):
+        return self.user.email
+    
 
 
 

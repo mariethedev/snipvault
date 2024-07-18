@@ -4,6 +4,8 @@ from django.core.mail import send_mail
 from rest_framework.response import Response
 from rest_framework import status
 from django.conf import settings
+from django.contrib.auth import login
+
 
 class UserRegisterAPIView(APIView):
     serializer_class = UserRegistrationSerializer
@@ -16,6 +18,12 @@ class UserRegisterAPIView(APIView):
         
         if serializer.is_valid():
             user = serializer.save()
+            
+            # Get the backend used for authentication
+            backend = settings.AUTHENTICATION_BACKENDS[0]
+            
+            login(request, user, backend=backend)
+
 
             # Send email
             subject = 'Welcome to SnipVault!'
