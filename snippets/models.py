@@ -18,6 +18,8 @@ class Snippet(models.Model):
     style = models.CharField(choices = STYLE_CHOICES, default='friendly', max_length=100)
     owner = models.ForeignKey('authentication.User', related_name='snippets', on_delete=models.CASCADE, default='')
     highlighted = models.TextField(default= '', blank= True)
+    description = models.TextField(blank = True, default='')
+    tags = models.CharField(max_length=200, blank = True, default = '')
     
     class Meta:
         ordering = ['created']
