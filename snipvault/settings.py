@@ -51,6 +51,8 @@ INSTALLED_APPS = [
     'oauth2_provider',
     'social_django',
     'drf_social_oauth2',
+    'snippets',
+    'rest_framework_simplejwt.token_blacklist',
     
 ]
 
@@ -187,7 +189,7 @@ SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(hours=5),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
     "ROTATE_REFRESH_TOKENS": False,
-    "BLACKLIST_AFTER_ROTATION": False,
+    "BLACKLIST_AFTER_ROTATION": True,
     "UPDATE_LAST_LOGIN": False,
 
     "ALGORITHM": "HS256",

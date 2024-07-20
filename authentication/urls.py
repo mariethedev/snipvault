@@ -5,6 +5,8 @@ from authentication.views.google import *
 from authentication.views.github import *
 from authentication.views.userprofile import *
 from authentication.views.password import *
+from authentication.views.logout import *
+from rest_framework_simplejwt.views import TokenRefreshView
 
 urlpatterns = [
     ##Email Authentication
@@ -28,5 +30,9 @@ urlpatterns = [
     #Password 
     path('password_reset', ResetPasswordAPIView.as_view(), name = 'reset-password'),
     path('password_reset/<uidb64>/<token>/', PasswordResetConfirmAPIView.as_view(), name='password-reset-confirm'),
+    
+    ##Logout and Token Refresh
+    path('logout', LogoutView.as_view(), name = 'logout-user'),
+    path('token/refresh/', TokenRefreshView.as_view(), name = 'token-refresh'),
 
 ]
