@@ -18,7 +18,7 @@ class SnippetViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated, IsOwnerOrReadOnly]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter]
     filterset_fields = ['tags']
-    search_fileds = [ 'title', 'tags', 'code']
+    search_fileds = [ 'title', 'tags', 'code', 'language']
     
     
     def get_queryset(self):
