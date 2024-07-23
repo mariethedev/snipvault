@@ -1,6 +1,6 @@
 from django.urls import path
 from rest_framework.urlpatterns import format_suffix_patterns
-from snippets.views import SnippetViewSet, SharedSnippetViewSet
+from snippets.views import *
 from rest_framework import renderers
 
 #SNIPPET VIEWSET
@@ -21,27 +21,15 @@ snippet_highlight = SnippetViewSet.as_view({
     renderer_classes = [renderers.StaticHTMLRenderer]                                   
 )
 
-#SHARED SNIPPET VIEWSET
-sharedsnippet_list = SharedSnippetViewSet.as_view({
-    'get': 'list',
-    'post': 'create'
-})
-
-sharedsnippet_detail = SharedSnippetViewSet.as_view({
-    'get': 'retrieve',
-    'put': 'update',
-    'patch': 'partial_update',
-})
 
 urlpatterns = [
     path('', snippet_list, name = 'snippet-list'),
     path('<int:pk>/',snippet_detail , name = 'snippet-detail'),
     path('<int:pk>/highlight/', snippet_highlight, name = 'snippet-highlight'),   
     
-    path('shared/', sharedsnippet_list, name = 'shared-snippet-list'),
-    path('shared/<int:pk>/', sharedsnippet_detail, name = 'shared-snippet-detail'),
+    path('<int:snippet_id>/share/', ShareSnippetView.as_view(), name= 'share-snippet'),
+    path('shared-snippets/', ListSharedSnippetsView.as_view(), name = 'list-shared-snippets'),
+    path('shared-snippets/<int:shared_snippet_id>/edit/', EditSharedSnippetView.as_view(), name = 'edit-shared-snippet'),
 ]
-
-
 
 urlpatterns = format_suffix_patterns(urlpatterns)

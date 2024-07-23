@@ -4,6 +4,7 @@ from pygments.styles import get_all_styles
 from pygments.lexers import get_lexer_by_name
 from pygments.formatters.html import HtmlFormatter
 from pygments import highlight
+from snippets.utils import generate_prefixed_uuid
 
 LEXERS = [item for item in get_all_lexers() if item[1]]
 LANGUAGE_CHOICES = sorted([(item[1][0], item[0]) for item in LEXERS])
@@ -25,7 +26,7 @@ class Snippet(models.Model):
         ordering = ['created']
         
     def save(self, *args, **kwargs):
-        
+
         lexer = get_lexer_by_name(self.language)
         linenos = 'table' if self.linenos else False
         options = {'title': self.title} if self.title else {}
@@ -40,12 +41,14 @@ class Snippet(models.Model):
         
 
 class SharedSnippet(models.Model):
-    snippet = models.ForeignKey(Snippet, on_delete=models.CASCADE)
+    snippet = models.ForeignKey(Snippet, on_delete=models.CASCADE, related_name='shared_snippet')
     shared_with = models.ForeignKey('authentication.User', on_delete=models.CASCADE)
     can_edit = models.BooleanField(default='False')
+    shared_at = models.DateTimeField(auto_now_add=True)
     
     class Meta:
         unique_together = ('snippet', 'shared_with',)
+        
         
     def __str__(self):
         return f"{self.snippet.title} shared with {self.shared_with.email}"

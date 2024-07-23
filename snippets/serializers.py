@@ -1,8 +1,6 @@
 from rest_framework import serializers
 from snippets.models import Snippet, SharedSnippet
-from django.contrib.auth import get_user_model
-
-User = get_user_model()
+from authentication.models import User
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -10,18 +8,36 @@ class UserSerializer(serializers.ModelSerializer):
         fields = ['email']
 
 class SnippetSerializer(serializers.ModelSerializer):
+    snippet_id = serializers.ReadOnlyField(source = 'id')
     owner = serializers.ReadOnlyField(source = 'owner.email')
     highlight = serializers.HyperlinkedIdentityField(view_name='snippet-highlight', format= 'html')
     
     class Meta:
         model = Snippet
-        fields = ['id', 'owner', 'highlight', 'title', 'code', 'description', 'linenos', 'language', 'tags' ,'style']
+        fields = ['snippet_id', 'owner', 'highlight', 'title', 'code', 'description', 'linenos', 'language', 'tags' ,'style']
+        
         
 class SharedSnippetSerializer(serializers.ModelSerializer):  
+    shared_snippet_id = serializers.ReadOnlyField(source = 'id')
     snippet = SnippetSerializer(read_only=True)  
-    shared_with = UserSerializer(read_only = True )
+    shared_with = serializers.EmailField(write_only = True )
+    can_edit = serializers.BooleanField()
     
     class Meta:
         model = SharedSnippet
-        fields = ['id', 'snippet', 'shared_with', 'can_edit']
+        fields = ['shared_snippet_id', 'snippet', 'shared_with', 'can_edit', 'shared_at']
+        read_only_fields = [ 'shared_at']
+        
+    def validate_shared_with(self, email):
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            raise serializers.ValidationError('Use with email does not exist.')
+        return user
+    
+    def create(self, validated_data):
+        shared_with = validated_data.pop('shared_with')
+        snippet = validated_data.pop('snippet')
+        shared_with_user = User.objects.get(email = shared_with)
+        return SharedSnippet.objects.create(snippet=snippet, shared_with=shared_with_user, **validated_data)
         
