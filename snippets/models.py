@@ -34,3 +34,18 @@ class Snippet(models.Model):
         
         super().save(*args, **kwargs)
         
+    
+    def __str__(self):
+        return self.title
+        
+
+class SharedSnippet(models.Model):
+    snippet = models.ForeignKey(Snippet, on_delete=models.CASCADE)
+    shared_with = models.ForeignKey('authentication.User', on_delete=models.CASCADE)
+    can_edit = models.BooleanField(default='False')
+    
+    class Meta:
+        unique_together = ('snippet', 'shared_with',)
+        
+    def __str__(self):
+        return f"{self.snippet.title} shared with {self.shared_with.email}"
