@@ -30,6 +30,8 @@ urlpatterns = [
     path('<int:snippet_id>/share/', ShareSnippetView.as_view(), name= 'share-snippet'),
     path('shared-snippets/', ListSharedSnippetsView.as_view(), name = 'list-shared-snippets'),
     path('shared-snippets/<int:shared_snippet_id>/edit/', EditSharedSnippetView.as_view(), name = 'edit-shared-snippet'),
+    
+    path('<int:snippet_id>/note/', NoteView.as_view(), name = 'snippet-note' ),
 ]
 
 urlpatterns = format_suffix_patterns(urlpatterns)

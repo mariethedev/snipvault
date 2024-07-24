@@ -1,7 +1,7 @@
 from rest_framework import viewsets, renderers, filters
 from snippets.serializers import *
-from snippets.models import Snippet, SharedSnippet
-from snippets.serializers import SnippetSerializer, SharedSnippetSerializer
+from snippets.models import Snippet, SharedSnippet, Note
+from snippets.serializers import SnippetSerializer, SharedSnippetSerializer , NoteSerializer
 from rest_framework.permissions import *
 from snippets.permissions import *
 from rest_framework.decorators import action
@@ -13,6 +13,8 @@ from rest_framework.views import APIView
 from rest_framework.generics import *
 from authentication.models import User
 from rest_framework.exceptions import PermissionDenied, NotFound
+from rest_framework.parsers import JSONParser
+
 
 
 
@@ -159,3 +161,45 @@ class EditSharedSnippetView(UpdateAPIView):
     def perform_update(self, serializer):
         serializer.save()
         
+        
+class NoteView(APIView):
+    
+    permission_classes = [ IsAuthenticated]
+    
+    def get(self, request, snippet_id):
+        note = get_object_or_404(Note, snippet_id= snippet_id)
+        serializer = NoteSerializer(note)
+        return Response(serializer.data)
+    
+    def post(self, request, snippet_id):
+        
+        snippet = get_object_or_404(Snippet, id=snippet_id)
+        if Note.objects.filter(snippet=snippet).exists():
+            return Response({"error": "A note already exists for this snippet."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if snippet.owner != request.user:
+            return Response({"error": "You do not have permission to create a note for this snippet."}, status=status.HTTP_403_FORBIDDEN)
+        
+        data = JSONParser().parse(request)
+        serializer = NoteSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save(snippet=snippet)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    
+    def put(self, request, snippet_id):
+        note = get_object_or_404(Note, snippet_id= snippet_id)
+        if note.snippet.owner != request.user:
+            return Response({"error": "You do not have permission to edit this note."}, status=status.HTTP_403_FORBIDDEN)
+        
+        data = JSONParser().parse(request)
+        serializer = NoteSerializer(note,data=data, partial = True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
+                "success": "Snippet note updated successfully!",
+                'data':serializer.data
+            })
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+

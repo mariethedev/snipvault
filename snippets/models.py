@@ -52,3 +52,14 @@ class SharedSnippet(models.Model):
         
     def __str__(self):
         return f"{self.snippet.title} shared with {self.shared_with.email}"
+    
+    
+class Note(models.Model):
+    snippet = models.OneToOneField(Snippet, on_delete=models.CASCADE)
+    content = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    
+    def __str__(self):
+        return f"Note for snippet {self.snippet.id}"

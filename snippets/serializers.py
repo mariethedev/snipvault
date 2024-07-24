@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from snippets.models import Snippet, SharedSnippet
+from snippets.models import Snippet, SharedSnippet, Note
 from authentication.models import User
 
 class UserSerializer(serializers.ModelSerializer):
@@ -40,4 +40,17 @@ class SharedSnippetSerializer(serializers.ModelSerializer):
         snippet = validated_data.pop('snippet')
         shared_with_user = User.objects.get(email = shared_with)
         return SharedSnippet.objects.create(snippet=snippet, shared_with=shared_with_user, **validated_data)
+        
+    
+    
+class NoteSerializer(serializers.ModelSerializer):
+    
+    class Meta:
+        model = Note
+        fields = ['content', 'created_at', 'updated_at']
+        
+    def create(self, validated_data):
+        snippet = validated_data.pop('snippet')
+        note = Note.objects.create(snippet=snippet, **validated_data)
+        return note
         
