@@ -14,7 +14,7 @@ class SnippetSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Snippet
-        fields = ['snippet_id', 'owner', 'highlight', 'title', 'code', 'description', 'linenos', 'language', 'tags' ,'style']
+        fields = ['snippet_id', 'owner', 'highlight', 'title', 'code', 'description', 'linenos', 'language', 'tags' ,'style', 'deleted']
         
         
 class SharedSnippetSerializer(serializers.ModelSerializer):  

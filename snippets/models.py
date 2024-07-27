@@ -4,7 +4,32 @@ from pygments.styles import get_all_styles
 from pygments.lexers import get_lexer_by_name
 from pygments.formatters.html import HtmlFormatter
 from pygments import highlight
-from snippets.utils import generate_prefixed_uuid
+
+
+class SoftDeleteManager(models.Manager):
+    
+    #Fetches all items that have not been deleted
+    def get_queryset(self):
+        return super().get_queryset().filter(deleted = False)
+    
+    #Fetches all items including that which have been deleted amd that which have not
+    def all_with_deleted(self):
+        return super().get_queryset()
+    
+    #Fetches all items which have been deleted
+    def deleted(self):
+        return super().get_queryset().filter(deleted = True)
+    
+    def get(self, *args, **kwargs):
+        return self.all_with_deleted().get(*args, **kwargs)
+    
+    def filter(self, *args, **kwargs):
+        if 'pk' in kwargs:
+            return self.all_with_deleted().get(*args, **kwargs)
+        return self.get_queryset().filter(*args, **kwargs)
+    
+    
+
 
 LEXERS = [item for item in get_all_lexers() if item[1]]
 LANGUAGE_CHOICES = sorted([(item[1][0], item[0]) for item in LEXERS])
@@ -21,9 +46,21 @@ class Snippet(models.Model):
     highlighted = models.TextField(default= '', blank= True)
     description = models.TextField(blank = True, default='')
     tags = models.CharField(max_length=200, blank = True, default = '')
+    deleted = models.BooleanField(default=False)
+    
+    objects = SoftDeleteManager()
     
     class Meta:
         ordering = ['created']
+        
+        
+    def soft_delete(self):
+        self.deleted = True
+        self.save()
+        
+    def restore(self):
+        self.deleted = False
+        self.save()
         
     def save(self, *args, **kwargs):
 

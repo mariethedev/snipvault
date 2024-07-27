@@ -17,8 +17,6 @@ from rest_framework.parsers import JSONParser
 
 
 
-
-
 class SnippetViewSet(viewsets.ModelViewSet):
     
     queryset = Snippet.objects.all()
@@ -31,20 +29,26 @@ class SnippetViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         user  = self.request.user
-        owned_snippets = Snippet.objects.filter(owner = user)
-        shared_snippets = Snippet.objects.filter(shared_snippet__shared_with = user)
-        queryset = owned_snippets | shared_snippets
-        
+        trash = self.request.query_params.get('trash', None)
         search = self.request.query_params.get('search', None)
-        tags = self.request.query_params.get('tags', None)
+        tags = self.request.query_params.get('tags', None)   
+        
+        if trash:
+            owned_snippets = Snippet.objects.filter(owner = user, deleted = True)
+            shared_snippets = Snippet.objects.filter(shared_snippet__shared_with = user, deleted = True)
+            
+        else:
+            owned_snippets = Snippet.objects.filter(owner = user, deleted = False)
+            shared_snippets = Snippet.objects.filter(shared_snippet__shared_with = user, deleted = False)                
+
+        queryset = owned_snippets | shared_snippets
         
         if search:
             queryset = queryset.filter(
                 Q(title__icontains=search) |
                 Q(code__icontains=search) |
                 Q(description__icontains=search)|
-                Q(language__icontains=search)
-                
+                Q(language__icontains=search)            
             )
             
         if tags:
@@ -84,6 +88,78 @@ class SnippetViewSet(viewsets.ModelViewSet):
             'snippets': serializer.data    
         }
         return Response(response_data , status=status.HTTP_200_OK)
+    
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        instance.soft_delete()
+        return Response({'success': 'Snippet has been deleted successfully!'}, status=status.HTTP_204_NO_CONTENT)
+    
+    
+    
+class DeletedSnippetsView(APIView):
+    
+    serializer_class = SnippetSerializer
+    permission_classes = [IsAuthenticated]   
+    
+    def get(self, request, *args, **kwargs):
+        user = self.request.user
+        
+        queryset = Snippet.objects.deleted().filter(owner=user)
+        serializer = self.serializer_class(queryset, many = True, context={'request': request})
+        
+        response_data = {
+            'count': queryset.count(),
+            'snippets': serializer.data    
+        }
+        return Response(response_data , status=status.HTTP_200_OK)
+        
+            
+class RestoreDeletedSnippetView(APIView):
+    permission_classes = [ IsAuthenticated]
+    
+    def post(self, request, snippet_id):
+        try:
+            snippet = Snippet.objects.get(id=snippet_id, owner=request.user)
+        except Snippet.DoesNotExist:
+            return Response({'error': 'Snippet not found.'}, status=404)
+        
+        if snippet.deleted == True:
+            snippet.restore()
+            return Response({'success': 'Snippet restored successfully!'}, status=status.HTTP_200_OK)
+        
+        return Response({'error': 'Snippet is not deleted'}, status=status.HTTP_400_BAD_REQUEST)
+    
+    
+class PermanentlyDeleteSnippetView(APIView):
+    
+    permission_classes = [IsAuthenticated]
+    
+    def delete(self, request, snippet_id):
+        try:
+            snippet = Snippet.objects.get(id=snippet_id, owner=request.user)
+        except Snippet.DoesNotExist:
+            return Response({'error': 'Snippet not found.'}, status=404)
+        
+        if snippet.deleted == True:
+            snippet.delete()
+            return Response({'success': 'Snippet has been permanently deleted!'}, status=status.HTTP_204_NO_CONTENT)
+        
+        return Response({'error': 'Snippet is not deleted.'}, status=status.HTTP_400_BAD_REQUEST)
+    
+    
+class PermanentlyDeleteAllSnippetsView(APIView):
+    
+    permission_classes = [IsAuthenticated]
+    
+    def delete(self, request):
+        user = self.request.user
+        queryset = Snippet.objects.deleted().filter(owner=user)
+        if queryset.count() == 0:
+            return Response({'error': 'Sorry, you have no deleted snippets.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        queryset.delete()
+        return Response({'success': 'All deleted snippets have been deleted permanently!'}, status=status.HTTP_204_NO_CONTENT)
+        
 
 
 
